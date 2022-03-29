@@ -15,15 +15,6 @@ assert os.path.exists(root_dir)
 if not os.path.exists(qc_results_dir):  
     os.makedirs(qc_results_dir)
 
-    Nanopore "basic"
-        Read length distribution
-        Read count
-        Classification using e.g. Kraken or something.
-            Uses loads of RAM
-        Maybe a different script?
-            Reference seeker? If no reference genome given.
-                Conditional logic within snakemake?
-            Mapping against a reference and getting depth
 ## expand statement goes at the end (bottom) of each path in the dag
 rule all:
     input:
@@ -34,42 +25,69 @@ rule all:
 
 rule assembly_stats:
     input:
-        assembly = rules.move_shovill_output.output.final
+        expand('{root_dir}/{sample}/{sample}.fastq.gz', sample = todo_list, root_dir = root_dir)
     output:
-        stats = '{root_dir}/{sample}/shovill_bbduk/{sample}_contigs.assembly_stats.tsv',
+        stats = '{root_dir}/{sample}/{sample}_contigs.assembly_stats.tsv'
     conda:
         '../../envs/assembly_stats.yaml'
     shell:
-        'assembly-stats -t {input.assembly} > {output.stats}'
+        'assembly-stats -t {input} > {output.stats}'
 
 rule kraken2:
    input:
-       r1 = rules.bbduk.output.r1,
-       r2 = rules.bbduk.output.r2
+        expand('{root_dir}/{sample}/{sample}.fastq.gz', sample = todo_list, root_dir = root_dir)
    output:
        kraken_report = '{root_dir}/{sample}/kraken2/{sample}.kraken_report.txt'
    threads: kraken_threads
    conda:
        '../../envs/kraken2.yaml'
    shell:
-       'kraken2 --gzip-compressed --use-names --output - --db /home/ubuntu/external_tb/kraken2/database/2020.09.28/gtdb_r89_54k_kraken2_full --report {output.kraken_report} --threads {threads} --confidence 0.9 --memory-mapping --paired {input.r1} {input.r2}'
+       'kraken2 --gzip-compressed --use-names --output {output}  --db {DB_PATH} --report {output.kraken_report} --threads {threads} --confidence 0.9 --memory-mapping {input}'
  
 rule ref_seeker:
     input:
-        assembly = rules.move_shovill_output.output.final
+        specie = expand('{root_dir}/{sample}/{sample}.fastq.gz', sample = todo_list, root_dir = root_dir),
+        db = '...'
     output:
-        mlst_results = '{root_dir}/{sample}/mlst/{sample}.mlst.tsv'
+        refSeeker_results = '{root_dir}/{sample}/Refseeker/{sample}.Refseeker.txt'
     conda:
-        '../../envs/mlst.yaml'
+        '../../envs/refseeker.yaml'
     shell:
-        'mlst --scheme senterica --nopath {input.assembly} > {output.mlst_results}'
+        'referenceseeker {input.db} {input.specie} | tee {output}'
 
-rule read_depth:
-    input:
-        assembly = rules.move_shovill_output.output.final
-    output:
-        sistr_results = '{root_dir}/{sample}/sistr/{sample}.sistr.tab'
-    conda:
-        '../../envs/sistr.yaml'
-    shell:
-        'sistr --qc -f tab -t 4 -o {output.sistr_results} {input.assembly}'
+##Reference seeker? If no reference genome given.
+##Conditional logic within snakemake
+##Mapping against a reference and getting depth
+rule minimap:
+	input:
+		sam = rules.reads_stat.input,
+		ref = expand('/home/ubuntu/data/belson/reference/2021.04.01/{ref}_contigs.fa',ref=refs)
+	output:
+		temp('/home/ubuntu/data/belson/isangi_nanopore/qc/results/2021.01.08/{sample}.sam')
+	shell:
+		'minimap2 -ax map-ont {input.ref} {input.sam} > {output}'
+
+rule sam2bam:
+	input:
+		rules.minimap.output
+	output:
+		temp('/home/ubuntu/data/belson/isangi_nanopore/qc/results/2021.01.08/{sample}.bam')
+	shell:
+		'samtools view -b {input} -o {output}'
+
+rule sort_bam:
+	input:
+		rules.sam2bam.output
+	output:
+		'/home/ubuntu/data/belson/isangi_nanopore/qc/results/2021.01.08/{sample}.sorted.bam'
+	shell:
+		'samtools sort {input} -o {output}'
+
+rule depth_calc:
+	input:
+		rules.sort_bam.output
+	output:
+		'/home/ubuntu/data/belson/isangi_nanopore/qc/results/2021.01.08/{sample}_coverage.txt'
+	shell:
+		"samtools depth -aa {input} | awk '{{sum+=$3}} END {{print \"Average = \",sum/NR}}' > {output}"
+
