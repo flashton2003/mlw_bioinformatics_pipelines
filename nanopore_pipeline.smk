@@ -1,22 +1,13 @@
 import os
 
-## from here https://github.com/jakevc/snakemake_multiqc/blob/master/Snakefile
-## alternative within conda https://multiqc.info/docs/#snakemake
-
-
 def read_todo_list(todo_list):
     with open(todo_list) as fi:
         lines = fi.readlines()
         lines = [x.strip() for x in lines]
     return lines
 
-#configfile: "/home/ubuntu/scripts/snakemake/configs/salmonella.yaml"
-#configfile: "/home/ubuntu/.config/snakemake/salmonella_slurm/config.yaml"
-
 todo_list = read_todo_list(config['todo_list'])
 root_dir = config['root_dir']
-amrfinder_db = '/home/ubuntu/hao_shigella/salmonella/reference_genomes/2021.02.10/2020-12-17.1'
-qc_results_dir = config['qc_results_dir']
 
 kraken_threads = 8
 
@@ -24,102 +15,22 @@ assert os.path.exists(root_dir)
 if not os.path.exists(qc_results_dir):  
     os.makedirs(qc_results_dir)
 
+    Nanopore "basic"
+        Read length distribution
+        Read count
+        Classification using e.g. Kraken or something.
+            Uses loads of RAM
+        Maybe a different script?
+            Reference seeker? If no reference genome given.
+                Conditional logic within snakemake?
+            Mapping against a reference and getting depth
 ## expand statement goes at the end (bottom) of each path in the dag
 rule all:
     input:
-        #f'{qc_results_dir}/multiqc_report.html',
-        #expand(['{root_dir}/{sample}/{sample}_bbduk_1.fastq.gz', '{root_dir}/{sample}/{sample}_bbduk_2.fastq.gz'], sample = todo_list, root_dir = root_dir),
-        expand(['{root_dir}/{sample}/{sample}_bbduk_1.fastq.gz', '{root_dir}/{sample}/{sample}_bbduk_2.fastq.gz'], sample = todo_list, root_dir = root_dir),
-        expand('{root_dir}/{sample}/mlst/{sample}.mlst.tsv', sample = todo_list, root_dir = root_dir),
-        expand('{root_dir}/{sample}/sistr/{sample}.sistr.tab', sample = todo_list, root_dir = root_dir),
-        expand('{root_dir}/{sample}/shovill_bbduk/{sample}_contigs.assembly_stats.tsv', sample = todo_list, root_dir = root_dir),
-        expand('{root_dir}/{sample}/amr_finder_plus/{sample}.amr_finder_plus.tsv', sample = todo_list, root_dir = root_dir)
-        #expand('{root_dir}/{sample}/kraken2/{sample}.kraken_report.txt', sample = todo_list, root_dir = root_dir)
-        #'/home/ubuntu/smk_slrm/.snakemake/conda/62c554cd/share/amrfinderplus/data/2020-03-20.1/AMR_DNA-Salmonella'
-
-rule fastqc:
-    input:
-        ['{root_dir}/{sample}/{sample}_1.fastq.gz', '{root_dir}/{sample}/{sample}_2.fastq.gz']
-    output:
-        ['{root_dir}/{sample}/{sample}_1_fastqc.zip', '{root_dir}/{sample}/{sample}_2_fastqc.zip', '{root_dir}/{sample}/{sample}_1_fastqc.html', '{root_dir}/{sample}/{sample}_2_fastqc.html']
-    conda:
-        '../../envs/fastqc.yaml'
-    shell:
-        'fastqc {input}'
-
-rule move_fastqc_output:
-    input:
-        rules.fastqc.output
-    output:
-        ['{root_dir}/{sample}/fastqc/{sample}_1_fastqc.zip', '{root_dir}/{sample}/fastqc/{sample}_2_fastqc.zip', '{root_dir}/{sample}/fastqc/{sample}_1_fastqc.html', '{root_dir}/{sample}/fastqc/{sample}_2_fastqc.html']
-    run:
-        cmds = zip(input, output)
-        dirname = os.path.dirname(input[0])
-        if not os.path.exists(dirname):
-            shell('mkdir -p {dirname}')
-        for c in cmds:
-            print(c[0], c[1])
-            shell('mv {c[0]} {c[1]}')
-
-## do the expand bit in the multiqc as this is the last section which requires all these, and snakemake works by 'pulling'
-rule multiqc:
-    input:
-        expand(['{root_dir}/{sample}/fastqc/{sample}_1_fastqc.zip', '{root_dir}/{sample}/fastqc/{sample}_2_fastqc.zip', '{root_dir}/{sample}/fastqc/{sample}_1_fastqc.html', '{root_dir}/{sample}/fastqc/{sample}_2_fastqc.html'], sample = todo_list, root_dir = root_dir)
-    output:
-        '{qc_results_dir}/multiqc_report.html'
-    #conda:
-    #    '../../envs/multiqc.yaml'
-    run:
-        shell('conda activate multiqc')
-        shell('multiqc -o {qc_results_dir} {input}')
-
-rule bbduk:
-    input:
-        r1 = '{root_dir}/{sample}/{sample}_1.fastq.gz',
-        r2 = '{root_dir}/{sample}/{sample}_2.fastq.gz'
-
-    output:
-        r1 = '{root_dir}/{sample}/{sample}_bbduk_1.fastq.gz', 
-        r2 = '{root_dir}/{sample}/{sample}_bbduk_2.fastq.gz'
-    conda:
-        '../../envs/bbmap.yaml'
-    #run:
-        # print(input.r1, input.r2)
-        # print(output.r1, output.r2)
-    shell:
-        'bbduk.sh threads=8 ref=/home/ubuntu/external_tb/references/2019.04.22/adapters.fa in={input.r1} in2={input.r2} out={output.r1} out2={output.r2} ktrim=r k=23 mink=11 hdist=1 tbo tpe qtrim=r trimq=20 minlength=50'
-
-rule shovill:
-    params:
-        threads = 8,
-        ram = 32
-    input:
-        r1 = rules.bbduk.output.r1,
-        r2 = rules.bbduk.output.r2
-    output:
-        final = '{root_dir}/{sample}/shovill_bbduk/contigs.fa',
-        graph = '{root_dir}/{sample}/shovill_bbduk/contigs.gfa',
-        spades = '{root_dir}/{sample}/shovill_bbduk/spades.fasta'
-    conda:
-        '../../envs/shovill.yaml'
-    shell:
-        'shovill --outdir {root_dir}/{wildcards.sample}/shovill_bbduk -R1 {input.r1} -R2 {input.r2} --cpus {params.threads} --ram {params.ram} --force'
-
-rule move_shovill_output:
-    input:
-        final = rules.shovill.output.final,
-        graph = rules.shovill.output.graph,
-        spades = rules.shovill.output.spades
-    output:
-        final = '{root_dir}/{sample}/shovill_bbduk/{sample}_contigs.fa',
-        graph = '{root_dir}/{sample}/shovill_bbduk/{sample}_contigs.gfa',
-        spades = '{root_dir}/{sample}/shovill_bbduk/{sample}_spades.fasta'
-
-    shell:
-        '''mv {input.final} {output.final}
-        mv {input.graph} {output.graph}
-        mv {input.spades} {output.spades}
-        '''
+        expand('{root_dir}/{sample}/{sample}_contigs.assembly_stats.tsv', sample = todo_list, root_dir = root_dir),
+        expand('{root_dir}/{sample}/kraken2/{sample}.kraken_report.txt', sample = todo_list, root_dir = root_dir),
+        expand('{root_dir}/{sample}/Refseeker/{sample}.Refseeker.txt', sample = todo_list, root_dir = root_dir),
+        expand('{root_dir}/{sample}/read_depth/{sample}.read_depth.txt', sample = todo_list, root_dir = root_dir)
 
 rule assembly_stats:
     input:
