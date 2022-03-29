@@ -25,17 +25,17 @@ rule all:
 
 rule assembly_stats:
     input:
-        expand('{root_dir}/{sample}/{sample}.fastq.gz', sample = todo_list, root_dir = root_dir)
+        read = expand('{root_dir}/{sample}/{sample}.fastq.gz', sample = todo_list, root_dir = root_dir)
     output:
         stats = '{root_dir}/{sample}/{sample}_contigs.assembly_stats.tsv'
     conda:
         '../../envs/assembly_stats.yaml'
     shell:
-        'assembly-stats -t {input} > {output.stats}'
+        'assembly-stats -t {input.read} > {output.stats}'
 
 rule kraken2:
    input:
-        expand('{root_dir}/{sample}/{sample}.fastq.gz', sample = todo_list, root_dir = root_dir)
+        rules.assembly_stats.input.read
    output:
        kraken_report = '{root_dir}/{sample}/kraken2/{sample}.kraken_report.txt'
    threads: kraken_threads
@@ -46,7 +46,7 @@ rule kraken2:
  
 rule ref_seeker:
     input:
-        specie = expand('{root_dir}/{sample}/{sample}.fastq.gz', sample = todo_list, root_dir = root_dir),
+        specie = rules.assembly_stats.input.read,
         db = '...'
     output:
         refSeeker_results = '{root_dir}/{sample}/Refseeker/{sample}.Refseeker.txt'
@@ -60,34 +60,26 @@ rule ref_seeker:
 ##Mapping against a reference and getting depth
 rule minimap:
 	input:
-		sam = rules.reads_stat.input,
+		specie = rules.assembly_stats.input.read,
 		ref = expand('/home/ubuntu/data/belson/reference/2021.04.01/{ref}_contigs.fa',ref=refs)
 	output:
-		temp('/home/ubuntu/data/belson/isangi_nanopore/qc/results/2021.01.08/{sample}.sam')
+		temp('{root_dir}/{sample}/minimap/{sample}.sam')
 	shell:
-		'minimap2 -ax map-ont {input.ref} {input.sam} > {output}'
+		'minimap2 -ax map-ont {input.ref} {input.specie} > {output}'
 
 rule sam2bam:
 	input:
 		rules.minimap.output
 	output:
-		temp('/home/ubuntu/data/belson/isangi_nanopore/qc/results/2021.01.08/{sample}.bam')
+		temp('{root_dir}/{sample}/minimap/{sample}.bam')
 	shell:
-		'samtools view -b {input} -o {output}'
-
-rule sort_bam:
-	input:
-		rules.sam2bam.output
-	output:
-		'/home/ubuntu/data/belson/isangi_nanopore/qc/results/2021.01.08/{sample}.sorted.bam'
-	shell:
-		'samtools sort {input} -o {output}'
+        'samtools sort -@ 8 -o {output} {input}'
 
 rule depth_calc:
 	input:
 		rules.sort_bam.output
 	output:
-		'/home/ubuntu/data/belson/isangi_nanopore/qc/results/2021.01.08/{sample}_coverage.txt'
+		'{root_dir}/{sample}/minimap/{sample}_coverage.txt'
 	shell:
 		"samtools depth -aa {input} | awk '{{sum+=$3}} END {{print \"Average = \",sum/NR}}' > {output}"
 
