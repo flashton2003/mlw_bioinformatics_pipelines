@@ -42,7 +42,19 @@ rule assembly_stats:
     shell:
         'assembly-stats -t {input.assembly} > {output.stats}'
 
-rule mlst:
+rule kraken2:
+   input:
+       r1 = rules.bbduk.output.r1,
+       r2 = rules.bbduk.output.r2
+   output:
+       kraken_report = '{root_dir}/{sample}/kraken2/{sample}.kraken_report.txt'
+   threads: kraken_threads
+   conda:
+       '../../envs/kraken2.yaml'
+   shell:
+       'kraken2 --gzip-compressed --use-names --output - --db /home/ubuntu/external_tb/kraken2/database/2020.09.28/gtdb_r89_54k_kraken2_full --report {output.kraken_report} --threads {threads} --confidence 0.9 --memory-mapping --paired {input.r1} {input.r2}'
+ 
+rule ref_seeker:
     input:
         assembly = rules.move_shovill_output.output.final
     output:
@@ -52,7 +64,7 @@ rule mlst:
     shell:
         'mlst --scheme senterica --nopath {input.assembly} > {output.mlst_results}'
 
-rule sistr:
+rule read_depth:
     input:
         assembly = rules.move_shovill_output.output.final
     output:
@@ -61,47 +73,3 @@ rule sistr:
         '../../envs/sistr.yaml'
     shell:
         'sistr --qc -f tab -t 4 -o {output.sistr_results} {input.assembly}'
-
-rule star_amr:
-    input:
-        rules.move_shovill_output.output.final
-    output:
-        star_amr_output = = '{root_dir}/{sample}/star_amr/{sample}.star_amr.tsv'
-    conda:
-        '../../envs/staramr.yaml'
-    shell:
-        'amrfinder -u'
-
-rule amr_finder_plus:
-    input:
-        assembly = rules.move_shovill_output.output.final
-    output:
-        amr_finder_plus_results = '{root_dir}/{sample}/amr_finder_plus/{sample}.amr_finder_plus.tsv'
-    conda:
-        '../../envs/amrfinderplus.yaml'
-    shell:
-        'amrfinder -n {input.assembly} -O Salmonella --output {output.amr_finder_plus_results} --threads 4 --name {wildcards.sample} -d {amrfinder_db}'
-
-#rule snippy:
-#    input:
-#        r1 = rules.bbduk.output.r1,
-#        r2 = rules.bbduk.output.r2
-#    output:
-#        '{root_dir}/{sample}/snippy_bbduk/{sample}.consensus.subs.fa'
-#    conda:
-#        '../../envs/snippy.yaml'
-#    shell:
-#        'snippy --outdir {root_dir}/{wildcards.sample}/snippy_bbduk --reference {ref_genome} --R1 {input.r1} --R2 {input.r2} --cpus 8 --force --prefix {wildcards.sample}'
-
-#rule kraken2:
-#    input:
-#        r1 = rules.bbduk.output.r1,
-#        r2 = rules.bbduk.output.r2
-#    output:
-#        kraken_report = '{root_dir}/{sample}/kraken2/{sample}.kraken_report.txt'
-#    threads: kraken_threads
-#    conda:
-#        '../../envs/kraken2.yaml'
-#    shell:
-#        'kraken2 --gzip-compressed --use-names --output - --db /home/ubuntu/external_tb/kraken2/database/2020.09.28/gtdb_r89_54k_kraken2_full --report {output.kraken_report} --threads {threads} --confidence 0.9 --memory-mapping --paired {input.r1} {input.r2}'
- 
