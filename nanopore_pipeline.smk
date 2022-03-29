@@ -104,21 +104,30 @@ rule flye:
 
 rule racon:
 	input:
-		gen = rules.flye.output,
-		nano = reads
+		genome = rules.flye.output,
+		nano = rules.assembly_stats.input.read
 	output:
-		x1 = temp('{results}/{sample}/{sample}RaconX1.fasta'),
-		pf1 = temp('{results}/{sample}/{sample}.racon.paf')
+		racon = temp('{results}/{sample}/{sample}RaconX1.fasta'),
+		paf = temp('{results}/{sample}/{sample}.racon.paf')
 	shell:
-		'minimap2 -x map-ont {input.gen}/assembly.fasta {input.nano} > {output.pf1} && racon -t 4 {input.nano} {output.pf1} {input.gen}/assembly.fasta > {output.x1}'
+		'minimap2 -x map-ont {input.gen}/assembly.fasta {input.nano} > {output.paf} && racon -t 4 {input.nano} {output.paf} {input.gen}/assembly.fasta > {output.racon}'
 
 rule medaka:
 	input:
-		gen = rules.raconX1.output.x1,
+		gen = rules.racon.output.x1,
 		nano = reads
 	output:
 		directory('{results}/{sample}/{sample}medaka')
 	conda:
 		'/home/ubuntu/data/belson/isangi_nanopore/scripts/envs/medaka.yml'
 	shell:
-		'medaka_consensus -i {input.nano} -d {input.gen} -t 8  -m {model} -o {output}'
+		'medaka_consensus -i {input.nano} -d {input.genome} -t 8  -m {model} -o {output}'
+
+# Polca if illumina available + polypolish?
+rule bakta:
+        input:
+                rules.circlator.output
+        output:
+                directory('{results}/{sample}Bakta')
+        shell:
+                './bakta.sh {input}/06.fixstart.fasta {output}'
