@@ -83,3 +83,42 @@ rule depth_calc:
 	shell:
 		"samtools depth -aa {input} | awk '{{sum+=$3}} END {{print \"Average = \",sum/NR}}' > {output}"
 
+##Nanopore assembly, polishing and annotation
+    Racon
+    Medaka
+    Polca (?) if illumina available
+        Should also be able to add in teh illumina later and re-run the same pipeline.
+    Polypolish?
+    Bakta for annotation
+
+rule flye:
+	input:
+		rules.assembly_stats.input.read
+	output:
+		directory('{results}/{sample}/{sample}Flye')
+	conda:
+		'/home/ubuntu/data/belson/Guppy5_guppy3_comparison/napa/scripts/envs/flye.yml'
+	shell:
+		'bash flye.sh {output} {input.nano}'
+
+
+rule racon:
+	input:
+		gen = rules.flye.output,
+		nano = reads
+	output:
+		x1 = temp('{results}/{sample}/{sample}RaconX1.fasta'),
+		pf1 = temp('{results}/{sample}/{sample}.racon.paf')
+	shell:
+		'minimap2 -x map-ont {input.gen}/assembly.fasta {input.nano} > {output.pf1} && racon -t 4 {input.nano} {output.pf1} {input.gen}/assembly.fasta > {output.x1}'
+
+rule medaka:
+	input:
+		gen = rules.raconX1.output.x1,
+		nano = reads
+	output:
+		directory('{results}/{sample}/{sample}medaka')
+	conda:
+		'/home/ubuntu/data/belson/isangi_nanopore/scripts/envs/medaka.yml'
+	shell:
+		'medaka_consensus -i {input.nano} -d {input.gen} -t 8  -m {model} -o {output}'
