@@ -31,30 +31,49 @@ rule assembly_stats:
     conda:
         '../../envs/assembly_stats.yaml'
     shell:
-        'assembly-stats <(gzip -cd {input.read}) | tee {output.stats}'
+        '''
+        conda activate assembly-stat
+        assembly-stats <(gzip -cd {input.read}) | tee {output.stats}
+        '''
 
 rule kraken2:
    input:
-        read = rules.assembly_stats.input.read,
-        db = '/home/ubuntu/data/belson/kraken/' #replace with from config
+        read = '{root_dir}/samples/{sample}',
+        db = 'kraken' #replce with from config
    output:
-       '{root_dir}/{sample}/kraken2/{sample}.kraken_report.txt'
-   threads: kraken_threads
-   conda:
-       '../../envs/kraken2.yaml'
+       out = '{root_dir}/{sample}.kraken_report.txt',
+       report = '{root_dir}/{sample}.kraken'
+   threads: 8
    shell:
-       'kraken2 --gzip-compressed --use-names --output {output}  --db {input.db} --report {output} --threads {threads} --confidence 0.9 --memory-mapping {input.read}'
- 
+        '''
+        conda activate kraken2
+        kraken2 --use-names --threads 4 --db kraken --report {output.out} --gzip-compressed {input.read}> {output.report}
+        '''
+rule checkRef:
+    input:
+        'config.yaml'
+    output:
+        'success.txt'
+    run:
+        import yaml
+        with open(output[0],'w') as out:
+            with open(input[0],'r') as inf:
+                conf = yaml.safe_load(inf)
+                if conf.get('ref_genome'):
+                    out.write('success')
 rule ref_seeker:
     input:
         read = rules.assembly_stats.input.read,
-        db = '/home/ubuntu/data/belson/bacteria-refseq/' # Replace with config
+        db = config['refSek_db'] # Replace with config
     output:
         '{root_dir}/{sample}/Refseeker/{sample}.Refseeker.txt'
-    conda:
-        '../../envs/refseeker.yaml'
+    # conda:
+    #     '../../envs/refseeker.yaml'
     shell:
-        'referenceseeker {input.db} {input.read} | tee {output}'
+        '''
+        conda activate refseeker
+        referenceseeker {input.db} {input.read} | tee {output}
+        '''
 
 
 ##Reference seeker? If no reference genome given.
