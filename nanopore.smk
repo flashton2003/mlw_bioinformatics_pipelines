@@ -18,25 +18,25 @@ if not os.path.exists(qc_results_dir):
 ## expand statement goes at the end (bottom) of each path in the dag
 rule all:
     input:
-        expand('{root_dir}/{sample}/{sample}_contigs.assembly_stats.tsv', sample = todo_list, root_dir = root_dir),
+        expand('{root_dir}/{sample}/{sample}_reads.assembly_stats.tsv', sample = todo_list, root_dir = root_dir),
         expand('{root_dir}/{sample}/kraken2/{sample}.kraken_report.txt', sample = todo_list, root_dir = root_dir),
         expand('{root_dir}/{sample}/Refseeker/{sample}.Refseeker.txt', sample = todo_list, root_dir = root_dir),
         expand('{root_dir}/{sample}/read_depth/{sample}.read_depth.txt', sample = todo_list, root_dir = root_dir)
 
 rule assembly_stats:
     input:
-        read = expand('{root_dir}/{sample}/{sample}.fastq.gz', sample = todo_list, root_dir = root_dir)
+        read = '{root_dir}/samples/{sample}'
     output:
-        stats = '{root_dir}/{sample}/{sample}_contigs.assembly_stats.tsv'
+        stats = '{root_dir}/{sample}_reads.assembly_stats.tsv'
     conda:
         '../../envs/assembly_stats.yaml'
     shell:
-        'assembly-stats < (gzip -cd {input.read}) | tee {output.stats}'
+        'assembly-stats <(gzip -cd {input.read}) | tee {output.stats}'
 
 rule kraken2:
    input:
         read = rules.assembly_stats.input.read,
-        db = '/home/ubuntu/data/belson/kraken/'
+        db = '/home/ubuntu/data/belson/kraken/' #replace with from config
    output:
        '{root_dir}/{sample}/kraken2/{sample}.kraken_report.txt'
    threads: kraken_threads
@@ -48,7 +48,7 @@ rule kraken2:
 rule ref_seeker:
     input:
         read = rules.assembly_stats.input.read,
-        db = '/home/ubuntu/data/belson/bacteria-refseq/'
+        db = '/home/ubuntu/data/belson/bacteria-refseq/' # Replace with config
     output:
         '{root_dir}/{sample}/Refseeker/{sample}.Refseeker.txt'
     conda:
@@ -63,7 +63,7 @@ rule ref_seeker:
 rule minimap:
 	input:
 		read = rules.assembly_stats.input.read,
-		ref = '/home/ubuntu/data/belson/reference/2021.04.01/17762-33892_1_71_contigs.fa'
+		ref = '/home/ubuntu/data/belson/reference/2021.04.01/17762-33892_1_71_contigs.fa' # Put in the config 
 	output:
 		temp('{root_dir}/{sample}/minimap/{sample}.sam')
 	shell:
@@ -95,7 +95,6 @@ rule flye:
 		'/home/ubuntu/data/belson/Guppy5_guppy3_comparison/napa/scripts/envs/flye.yml'
 	shell:
 		'bash flye.sh {output} {input.nano}'
-
 
 rule racon:
 	input:
