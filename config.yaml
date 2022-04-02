@@ -1,0 +1,5 @@
+root: /home/ubuntu/data/belson/test_seq_service
+samples:
+  - barcode01_Acinetobacter_baumannii_J9.fastq.gz:
+  - barcode06_CHF10J1.fastq.gz:
+    - /home/ubuntu/data/belson/reference/2021.04.01/17762-33892_1_71_contigs.fa
