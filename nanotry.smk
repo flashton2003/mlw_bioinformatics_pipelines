@@ -11,10 +11,13 @@ rule all:
 rule kraken2:
    input:
         read = '{root_dir}/samples/{sample}',
-        db = '/home/ubuntu/data/belson/kraken/' #replce with from config
+        db = 'kraken' #replce with from config
    output:
-       '{root_dir}/{sample}.kraken_report.txt'
+       out = '{root_dir}/{sample}.kraken_report.txt',
+       report = '{root_dir}/{sample}.kraken'
    threads: 8
    shell:
-        'conda activate /home/ubuntu/data/belson/kraken'
-        'kraken2 --gzip-compressed --use-names --output {output}  --db {input.db} --report {output} --threads {threads} --confidence 0.9 --memory-mapping {input.read}'
+        '''
+        conda activate /home/ubuntu/data/belson/kraken
+        kraken2 --use-names --threads 4 --db kraken --report {output.out} --gzip-compressed {input.read}> {output.report}
+        '''

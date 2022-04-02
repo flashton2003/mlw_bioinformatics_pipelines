@@ -1,4 +1,6 @@
 root: /home/ubuntu/data/belson/test_seq_service
+kraken_db: ...
+refSek_db: /home/ubuntu/data/belson/bacteria-refseq/
 samples:
   - barcode01_Acinetobacter_baumannii_J9.fastq.gz:
   - barcode06_CHF10J1.fastq.gz:
