@@ -1,35 +1,20 @@
-import os
-
-def read_todo_list(todo_list):
-    with open(todo_list) as fi:
-        lines = fi.readlines()
-        lines = [x.strip() for x in lines]
-    return lines
-
-todo_list = read_todo_list(config['todo_list'])
-root_dir = config['root_dir']
-
-kraken_threads = 8
-
-assert os.path.exists(root_dir)
-if not os.path.exists(qc_results_dir):  
-    os.makedirs(qc_results_dir)
+configfile:'config_nano.yaml'
 
 ## expand statement goes at the end (bottom) of each path in the dag
 rule all:
     input:
-        expand('{root_dir}/{sample}/{sample}_reads.assembly_stats.tsv', sample = todo_list, root_dir = root_dir),
-        expand('{root_dir}/{sample}/kraken2/{sample}.kraken_report.txt', sample = todo_list, root_dir = root_dir),
-        expand('{root_dir}/{sample}/Refseeker/{sample}.Refseeker.txt', sample = todo_list, root_dir = root_dir),
-        expand('{root_dir}/{sample}/read_depth/{sample}.read_depth.txt', sample = todo_list, root_dir = root_dir)
+        expand('{root_dir}/{sample}/assembly_stat/{sample}_reads.assembly_stats.tsv', sample = config["samples"], root_dir = config["root"]),
+        expand('{root_dir}/{sample}/kraken2/{sample}.kraken_report.txt', sample = config["samples"], root_dir = config["root"]),
+        expand('{root_dir}/{sample}/Refseeker/{sample}.Refseeker.txt', sample = config["samples"], root_dir = config["root"]),
+        expand('{root_dir}/{sample}/read_depth/{sample}.read_depth.txt', sample = config["samples"], root_dir = config["root"])
 
 rule assembly_stats:
     input:
         read = '{root_dir}/samples/{sample}'
     output:
         stats = '{root_dir}/{sample}_reads.assembly_stats.tsv'
-    conda:
-        '../../envs/assembly_stats.yaml'
+    # conda:
+    #     '../../envs/assembly_stats.yaml'
     shell:
         '''
         conda activate assembly-stat
@@ -39,15 +24,15 @@ rule assembly_stats:
 rule kraken2:
    input:
         read = '{root_dir}/samples/{sample}',
-        db = 'kraken' #replce with from config
+        db = config['kraken_db']
    output:
-       out = '{root_dir}/{sample}.kraken_report.txt',
-       report = '{root_dir}/{sample}.kraken'
+       out1 = '{root_dir}/{sample}.kraken_report.txt',
+       out2 = '{root_dir}/{sample}.kraken'
    threads: 8
    shell:
         '''
         conda activate kraken2
-        kraken2 --use-names --threads 4 --db kraken --report {output.out} --gzip-compressed {input.read}> {output.report}
+        kraken2 --use-names --threads {threads} --db {input.db} --report {output.out1} --gzip-compressed {input.read}> {output.out2}
         '''
 rule checkRef:
     input:
