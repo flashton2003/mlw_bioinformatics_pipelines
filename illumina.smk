@@ -1,3 +1,4 @@
+configfile: 'config_illumina.yaml'
 
 ## expand statement goes at the end (bottom) of each path in the dag
 rule all:
