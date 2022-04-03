@@ -1,19 +1,3 @@
-import os
-
-def read_todo_list(todo_list):
-    with open(todo_list) as fi:
-        lines = fi.readlines()
-        lines = [x.strip() for x in lines]
-    return lines
-
-todo_list = read_todo_list(config['todo_list'])
-root_dir = config['root_dir']
-amrfinder_db = '/home/ubuntu/hao_shigella/salmonella/reference_genomes/2021.02.10/2020-12-17.1'
-qc_results_dir = config['qc_results_dir']
-
-assert os.path.exists(root_dir)
-if not os.path.exists(qc_results_dir):  
-    os.makedirs(qc_results_dir)
 
 ## expand statement goes at the end (bottom) of each path in the dag
 rule all:
