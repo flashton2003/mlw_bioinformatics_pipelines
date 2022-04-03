@@ -123,7 +123,10 @@ rule racon:
 		racon = temp('{results}/{sample}/{sample}RaconX1.fasta'),
 		paf = temp('{results}/{sample}/{sample}.racon.paf')
 	shell:
-		'minimap2 -x map-ont {input.gen}/assembly.fasta {input.nano} > {output.paf} && racon -t 4 {input.nano} {output.paf} {input.gen}/assembly.fasta > {output.racon}'
+        '''
+		minimap2 -x map-ont {input.gen}/assembly.fasta {input.nano} > {output.paf}
+        racon -t 4 {input.nano} {output.paf} {input.gen}/assembly.fasta > {output.racon}
+        '''
 
 rule medaka:
 	input:
@@ -192,8 +195,9 @@ rule polypolish:
 #From Medaka or polypolish??
 rule bakta:
     input:
-        rules.medaka.output
+        rules.medaka.output,
+        config['bakta_db']
     output:
         directory('{results}/{sample}Bakta')
     shell:
-        'bakta --db /home/ubuntu/data/belson/bakta/db/db {input}/consensus.fasta -o {output}'
+        'bakta --db {input[1]} {input[0]}/consensus.fasta -o {output}'
