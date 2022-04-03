@@ -2,6 +2,7 @@ root: /home/ubuntu/data/belson/test_seq_service
 kraken_db: /home/ubuntu/data/belson/test_seq_service/kraken
 refSek_db: /home/ubuntu/data/belson/bacteria-refseq/
 bakta_db: /home/ubuntu/data/belson/bakta/db/db
+medaka_mod: r941_min_high_g303
 samples:
   - barcode01_Acinetobacter_baumannii_J9.fastq.gz:
   - barcode06_CHF10J1.fastq.gz:
