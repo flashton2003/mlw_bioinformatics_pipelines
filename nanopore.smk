@@ -105,24 +105,28 @@ rule racon:
 		genome = rules.flye.output,
 		nano = rules.assembly_stats.input.read
 	output:
-		racon = temp('{results}/{sample}/{sample}RaconX1.fasta'),
+		racon = temp('{results}/{sample}/{sample}racon.fasta'),
 		paf = temp('{results}/{sample}/{sample}.racon.paf')
 	shell:
         '''
-		minimap2 -x map-ont {input.gen}/assembly.fasta {input.nano} > {output.paf}
-        racon -t 4 {input.nano} {output.paf} {input.gen}/assembly.fasta > {output.racon}
+		minimap2 -x map-ont {input.genome}/assembly.fasta {input.nano} > {output.paf}
+        racon -t 4 {input.nano} {output.paf} {input.genome}/assembly.fasta > {output.racon}
         '''
 
 rule medaka:
 	input:
-		gen = rules.racon.output.racon,
-		nano = rules.assembly_stats.input.read
+		genome = rules.racon.output.racon,
+		nano = rules.assembly_stats.input.read,
+        model = config['medaka_model']
 	output:
 		directory('{results}/{sample}/{sample}medaka')
-	conda:
-		'/home/ubuntu/data/belson/isangi_nanopore/scripts/envs/medaka.yml'
+	# conda:
+	# 	'/home/ubuntu/data/belson/isangi_nanopore/scripts/envs/medaka.yml'
 	shell:
-		'medaka_consensus -i {input.nano} -d {input.genome} -t 8  -m {model} -o {output}'
+        '''
+        conda activate medaka
+		medaka_consensus -i {input.nano} -d {input.genome} -t 8  -m {input.model} -o {output}
+        '''
 
 # Polca if illumina available + polypolish?
 rule polish_medaka:
