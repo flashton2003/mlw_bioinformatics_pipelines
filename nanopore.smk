@@ -72,9 +72,9 @@ rule ref_seeker:
 rule minimap:
 	input:
 		read = rules.assembly_stats.input.read,
-		ref = '/home/ubuntu/data/belson/reference/2021.04.01/17762-33892_1_71_contigs.fa' # Put in the config 
+		ref = config['ref_genome'] 
 	output:
-		temp('{root_dir}/{sample}/minimap/{sample}.sam')
+		temp('{root_dir}/{sample}/{sample}.sam')
 	shell:
 		'minimap2 -ax map-ont {input.ref} {input.read} > {output}'
 
@@ -84,7 +84,10 @@ rule sam2bam:
 	output:
 		temp('{root_dir}/{sample}/minimap/{sample}.bam')
 	shell:
-        'samtools sort -@ 8 -o {output} {input}'
+        '''
+        mkdir -p {wildcards.root_dir}/{wildcards.sample}/minimap
+        samtools sort -@ 8 -o {output} {input}
+        '''
 
 rule depth_calc:
 	input:
