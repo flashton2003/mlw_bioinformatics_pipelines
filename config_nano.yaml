@@ -5,5 +5,4 @@ bakta_db: /home/ubuntu/data/belson/bakta/db/db
 medaka_mod: r941_min_sup_g507
 ref_genome: /home/ubuntu/data/belson/reference/2021.04.01/17762-33892_1_71_contigs.fa
 samples:
-  - barcode01_Acinetobacter_baumannii_J9
   - barcode06_CHF10J1
