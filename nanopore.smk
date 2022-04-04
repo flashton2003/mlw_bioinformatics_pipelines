@@ -174,20 +174,20 @@ rule filter_alignments:
         aln1 = rules.bwa.output1,
         aln2 = rules.bwa.output2
     output:
-        aln1 = '{root_dir}/{sample}/{sample}_filtered_1.sam',
-        aln2 = '{root_dir}/{sample}/{sample}_filtered_2.sam'
+        out1 = '{root_dir}/{sample}/{sample}_filtered_1.sam',
+        out2 = '{root_dir}/{sample}/{sample}_filtered_2.sam'
     shell:
-        'polypolish_insert_filter.py --in1 {input.aln1} --in2 {input.aln2} --out1 {output.aln1} --out2 {output.aln2}'
+        'polypolish_insert_filter.py --in1 {input.aln1} --in2 {input.aln2} --out1 {output.out1} --out2 {output.out2}'
 
 rule polypolish:
     input:
-        genome = rules.medaka.output,
-        aln1 = rules.filter_alignments.aln1,
-        aln2 = rules.filter_alignments.aln2
+        rules.medaka.output,
+        rules.filter_alignments.aln1,
+        rules.filter_alignments.aln2
     output:
-        '{root_dir}/{sample}/Polish/{sample}_polished.fasta'
+        '{root_dir}/{sample}/Polypolish/{sample}_polished.fasta'
     shell:
-        'polypolish {input.genome} {input.aln1} {input.aln2} > {output}'
+        'polypolish {input[0]} {input[1]} {input[2]} > {output}'
 #From Medaka or polypolish??
 rule bakta:
     input:
@@ -196,4 +196,7 @@ rule bakta:
     output:
         directory('{root_dir}/{sample}/Bakta')
     shell:
-        'bakta --db {input[1]} {input[0]}/consensus.fasta -o {output}'
+        '''
+        conda activate bakta
+        bakta --db {input[1]} {input[0]}/consensus.fasta -o {output}
+        '''

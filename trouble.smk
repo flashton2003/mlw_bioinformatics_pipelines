@@ -5,7 +5,7 @@ rule all:
         expand('{root_dir}/{sample}/assembly_stat/{sample}_reads.assembly_stats.tsv',sample = config["samples"], root_dir = config["root"]),
         expand('{root_dir}/{sample}/kraken2/{sample}.kraken_report.txt',sample = config["samples"], root_dir = config["root"]),
         expand('{root_dir}/{sample}/Refseeker/{sample}.Refseeker.txt',sample = config["samples"], root_dir = config["root"]),
-        expand('{root_dir}/{sample}/read_depth/{sample}.read_depth.txt',sample = config["samples"], root_dir = config["root"]),
+        expand('{root_dir}/{sample}/read_depth/{sample}_coverage.txt',sample = config["samples"], root_dir = config["root"]),
         expand('{root_dir}/{sample}/Flye',sample = config["samples"], root_dir = config["root"]),
         expand('{root_dir}/{sample}/Medaka',sample = config["samples"], root_dir = config["root"]),
         expand('{root_dir}/{sample}/Bakta',sample = config["samples"], root_dir = config["root"])
@@ -56,7 +56,7 @@ rule sam2bam:
 
 rule depth_calc:
 	input:
-		rules.sort_bam.output
+		rules.sam2bam.output
 	output:
 		'{root_dir}/{sample}/read_depth/{sample}_coverage.txt'
 	shell:
@@ -73,11 +73,15 @@ rule flye:
 	conda:
 		'/home/ubuntu/data/belson/Guppy5_guppy3_comparison/napa/scripts/envs/flye.yml'
 	shell:
+<<<<<<< HEAD
         '''
         conda activate flye
 		flye --nano-hq {input} -g 5m -o {output} -t 8 --plasmids
         '''
 
+=======
+		'flye --nano-hq {input} -g 5m -o {output} -t 8 --plasmids'
+>>>>>>> 56bd230e23ab1e3e039b0853fe2c3555fbb24aac
 
 rule racon:
 	input:
