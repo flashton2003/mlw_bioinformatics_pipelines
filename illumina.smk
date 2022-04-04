@@ -14,10 +14,13 @@ rule pre_trimming:
         ['{root_dir}/{sample}/{sample}_1.fastq.gz', '{root_dir}/{sample}/{sample}_2.fastq.gz']
     output:
         ['{root_dir}/{sample}/{sample}_1_fastqc.zip', '{root_dir}/{sample}/{sample}_2_fastqc.zip', '{root_dir}/{sample}/{sample}_1_fastqc.html', '{root_dir}/{sample}/{sample}_2_fastqc.html']
-    conda:
-        '../../envs/fastqc.yaml'
+    # conda:
+    #     '../../envs/fastqc.yaml'
     shell:
-        'fastqc {input}'
+        '''
+        conda activate fastqc
+        fastqc {input}
+        '''
 
 rule move_fastqc_output:
     input:
@@ -41,10 +44,13 @@ rule bbduk:
     output:
         r1 = '{root_dir}/{sample}/{sample}_bbduk_1.fastq.gz', 
         r2 = '{root_dir}/{sample}/{sample}_bbduk_2.fastq.gz'
-    conda:
-        '../../envs/bbmap.yaml'
+    # conda:
+    #     '../../envs/bbmap.yaml'
     shell:
-        'bbduk.sh threads=8 ref=/home/ubuntu/external_tb/references/2019.04.22/adapters.fa in={input.r1} in2={input.r2} out={output.r1} out2={output.r2} ktrim=r k=23 mink=11 hdist=1 tbo tpe qtrim=r trimq=20 minlength=50'
+        '''
+        conda activate bbduk
+        bbduk.sh threads=8 ref=/home/ubuntu/external_tb/references/2019.04.22/adapters.fa in={input.r1} in2={input.r2} out={output.r1} out2={output.r2} ktrim=r k=23 mink=11 hdist=1 tbo tpe qtrim=r trimq=20 minlength=50
+        '''
 
 rule post_trimming:
     input:
@@ -54,7 +60,10 @@ rule post_trimming:
     conda:
         '../../envs/fastqc.yaml'
     shell:
-        'fastqc {input}'
+        '''
+        conda activate fastqc
+        fastqc {input}
+        '''
 ## do the expand bit in the multiqc as this is the last section which requires all these, and snakemake works by 'pulling'
 rule multiqc:
     input:
@@ -70,18 +79,20 @@ rule multiqc:
 
 rule phenix:
     params:
-        threads = 8,
-        ram = 32
+        threads = 8
     input:
         r1 = rules.bbduk.output.r1,
         r2 = rules.bbduk.output.r2,
         ref = '...'
     output:
         '{root_dir}/{sample}/phenix'
-    conda:
-        '../../envs/phenix.yaml'
+    # conda:
+    #     '../../envs/phenix.yaml'
     shell:
-        'phenix.py run_snp_pipeline.py -r1 {input.r1} -r2 {input.r2} -r {input.ref} --sample-name {wildcards.sample} --mapper bwa --variant gatk --filters min_depth:5,mq_score:30'
+        '''
+        conda activate phenix
+        phenix.py run_snp_pipeline.py -r1 {input.r1} -r2 {input.r2} -r {input.ref} --sample-name {wildcards.sample} --mapper bwa --variant gatk --filters min_depth:5,mq_score:30
+        '''
 
 rule skesa:
     input:
@@ -89,10 +100,13 @@ rule skesa:
         r2 = rules.bbduk.output.r2
     output:
         '{root_dir}/{sample}/skesa/{sample}_skesa.fa'
-    conda:
-        '../../envs/skesa.yaml'
+    # conda:
+    #     '../../envs/skesa.yaml'
     shell:
-        'skesa --reads {input.r1},{input.r2} --cores 4 --memory 48 > {output}'
+        '''
+        conda activate skesa
+        skesa --reads {input.r1},{input.r2} --cores 4 --memory 48 > {output}
+        '''
 
 rule assembly_stats:
     input:
@@ -102,7 +116,10 @@ rule assembly_stats:
     conda:
         '../../envs/assembly_stats.yaml'
     shell:
-        'assembly-stats -t {input} > {output}'
+        '''
+        conda activate assembly-stat
+        assembly-stats -t {input} > {output}
+        '''
 
 
 

@@ -10,7 +10,6 @@ rule all:
         expand('{root_dir}/{sample}/Flye',sample = config["samples"], root_dir = config["root"]),
         expand('{root_dir}/{sample}/Medaka',sample = config["samples"], root_dir = config["root"]),
         expand('{root_dir}/{sample}/Bakta',sample = config["samples"], root_dir = config["root"])
-
 rule assembly_stats:
     input:
         read = '{root_dir}/{sample}/{sample}.fastq.gz'

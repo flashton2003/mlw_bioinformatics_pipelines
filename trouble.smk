@@ -14,7 +14,7 @@ rule assembly_stats:
     input:
         read = '{root_dir}/{sample}/{sample}.fastq.gz'
     output:
-        stats = '{root_dir}/{sample}/assembly_stat/{sample}_reads.assembly_stats.tsv'
+    	stats = '{root_dir}/{sample}/assembly_stat/{sample}_reads.assembly_stats.tsv'
     shell:
         '''
         mkdir -p $( dirname {input.read} )
@@ -73,7 +73,11 @@ rule flye:
 	conda:
 		'/home/ubuntu/data/belson/Guppy5_guppy3_comparison/napa/scripts/envs/flye.yml'
 	shell:
-		'flye --nano-hq {input} -g 5m -o {output} -t 8 --plasmids '
+        '''
+        conda activate flye
+		flye --nano-hq {input} -g 5m -o {output} -t 8 --plasmids
+        '''
+
 
 rule racon:
 	input:
@@ -84,6 +88,7 @@ rule racon:
 		paf = temp('{root_dir}/{sample}/{sample}.racon.paf')
 	shell:
         '''
+        conda activate racon
 		minimap2 -x map-ont {input.genome}/assembly.fasta {input.nano} > {output.paf}
         racon -t 4 {input.nano} {output.paf} {input.genome}/assembly.fasta > {output.racon}
         '''
@@ -108,4 +113,7 @@ rule bakta:
     output:
         directory('{root_dir}/{sample}/Bakta')
     shell:
-        'bakta --db {input[1]} {input[0]}/consensus.fasta -o {output}'
+        '''
+        conda activate bakta
+        bakta --db {input[1]} {input[0]}/consensus.fasta -o {output}
+        '''
