@@ -8,8 +8,8 @@ rule all:
 
 rule pre_trimming:
     input:
-        r1 = lambda wildcards : config[wildcards.sample]["r1"],
-		r2 = lambda wildcards : config[wildcards.sample]["r2"]
+        r1 = lambda wildcards : config['sample'][wildcards.sample]["r1"],
+		r2 = lambda wildcards : config['sample'][wildcards.sample]["r2"]
     output:
         ['{root_dir}/{sample}/{sample}_1_fastqc.zip', '{root_dir}/{sample}/{sample}_2_fastqc.zip']
     # conda:
@@ -17,6 +17,6 @@ rule pre_trimming:
     shell:
         '''
         conda activate fastqc
-        fastqc {wildcards.root_dir}/{wildcards.sample}/{input.r1}
-        fastqc {wildcards.root_dir}/{wildcards.sample}/{input.r2}
+        fastqc {input.r1}
+        fastqc {input.r2}
         '''
