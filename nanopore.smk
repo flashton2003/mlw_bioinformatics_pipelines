@@ -1,5 +1,5 @@
 configfile:'config_nano.yaml'
-
+model = config['medaka_model']
 ## expand statement goes at the end (bottom) of each path in the dag
 rule all:
     input:
@@ -123,8 +123,7 @@ rule racon:
 rule medaka:
 	input:
 		genome = rules.racon.output.racon,
-		nano = rules.assembly_stats.input.read,
-        model = config['medaka_model']
+		nano = rules.assembly_stats.input.read  
 	output:
 		directory('{root_dir}/{sample}/Medaka')
 	# conda:
@@ -132,7 +131,7 @@ rule medaka:
 	shell:
         '''
         conda activate medaka
-		medaka_consensus -i {input.nano} -d {input.genome} -t 8  -m {input.model} -o {output}
+		medaka_consensus -i {input.nano} -d {input.genome} -t 8  -m {model} -o {output}
         '''
 
 # Polca if illumina available + polypolish?
