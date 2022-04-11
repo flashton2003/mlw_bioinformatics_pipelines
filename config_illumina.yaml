@@ -1,4 +1,6 @@
 root_dir: /home/ubuntu/data/belson/test_seq_service/illumina
+bbduk_ref: /home/ubuntu/external_tb/references/2019.04.22/adapters.fa
+ref_genome: /home/ubuntu/data/belson/reference/2021.04.01/17762-33892_1_71_contigs.fa
 sample: 
   Salmonella_isangi_17-762-33892: 
     r1: /home/ubuntu/data/belson/test_seq_service/illumina/Salmonella_isangi_17-762-33892/17762-33892_1_71_bbduk_1.fastq.gz
