@@ -129,7 +129,6 @@ rule assembly_stats:
     shell:
         '''
         conda activate assembly-stat
-        mkdir -p {output}
         assembly-stats -t {input} > {output}/{wildcards.sample}_contigs.assembly_stats.tsv
         '''
 
