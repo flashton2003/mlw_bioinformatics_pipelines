@@ -116,7 +116,6 @@ rule skesa:
     shell:
         '''
         conda activate skesa
-        mkdir -p {output}
         skesa --fasta {input.r1},{input.r2} --cores 4 --memory 48 > {output}/{wildcards.sample}_skesa.fa
         '''
 
