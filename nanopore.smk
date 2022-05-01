@@ -15,12 +15,11 @@ rule assembly_stats:
         read = '{root_dir}/{sample}/{sample}.fastq.gz'
     output:
         stats = '{root_dir}/{sample}/assembly_stat/{sample}_reads.assembly_stats.tsv'
-    # conda:
-    #     '../../envs/assembly_stats.yaml'
+    conda:
+        'assembly-stat'
     shell:
         '''
         mkdir -p $( dirname {input.read} )
-        conda activate assembly-stat
         assembly-stats <(gzip -cd {input.read}) | tee {output.stats}
         '''
 
@@ -32,10 +31,11 @@ rule kraken2:
        out1 = '{root_dir}/{sample}/kraken2/{sample}.kraken_report.txt',
        out2 = '{root_dir}/{sample}/kraken2/{sample}.kraken'
    threads: 8
+   conda:
+        'kraken2'
    shell:
         '''
         mkdir -p $( dirname {input.read} )
-        conda activate kraken2
         kraken2 --use-names --threads {threads} --db {input.db} --report {output.out1} --gzip-compressed {input.read}> {output.out2}
         '''
 rule checkRef:
@@ -56,13 +56,10 @@ rule ref_seeker:
         db = config['refSek_db'] 
     output:
         '{root_dir}/{sample}/Refseeker/{sample}.Refseeker.txt'
-    # conda:
-    #     '../../envs/refseeker.yaml'
+    conda:
+        'refseeker'
     shell:
-        '''
-        conda activate refseeker
-        referenceseeker {input.db} {input.read} | tee {output}
-        '''
+        "referenceseeker {input.db} {input.read} | tee {output}"
 
 
 ##Reference seeker? If no reference genome given.
@@ -126,13 +123,10 @@ rule medaka:
 		nano = rules.assembly_stats.input.read  
 	output:
 		directory('{root_dir}/{sample}/Medaka')
-	# conda:
-	# 	'/home/ubuntu/data/belson/isangi_nanopore/scripts/envs/medaka.yml'
+	conda:
+		'medaka'
 	shell:
-        '''
-        conda activate medaka
-		medaka_consensus -i {input.nano} -d {input.genome} -t 8  -m {model} -o {output}
-        '''
+        "medaka_consensus -i {input.nano} -d {input.genome} -t 8  -m {model} -o {output}"
 
 # Polca if illumina available + polypolish?
 rule polish_medaka:
@@ -194,8 +188,7 @@ rule bakta:
         config['bakta_db']
     output:
         directory('{root_dir}/{sample}/Bakta')
+    conda:
+        'bakta'
     shell:
-        '''
-        conda activate bakta
-        bakta --db {input[1]} {input[0]}/consensus.fasta -o {output}
-        '''
+        "bakta --db {input[1]} {input[0]}/consensus.fasta -o {output}"
