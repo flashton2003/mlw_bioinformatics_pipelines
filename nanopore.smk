@@ -38,18 +38,7 @@ rule kraken2:
         mkdir -p $( dirname {input.read} )
         kraken2 --use-names --threads {threads} --db {input.db} --report {output.out1} --gzip-compressed {input.read}> {output.out2}
         '''
-rule checkRef:
-    input:
-        'config.yaml'
-    output:
-        'success.txt'
-    run:
-        import yaml
-        with open(output[0],'w') as out:
-            with open(input[0],'r') as inf:
-                conf = yaml.safe_load(inf)
-                if conf.get('ref_genome'):
-                    out.write('success')
+
 rule ref_seeker:
     input:
         read = rules.assembly_stats.input.read,
